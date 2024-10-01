@@ -1,34 +1,41 @@
-import './App.css';
-import { useState, useEffect } from 'react';
+import React from 'react';
+import { Box, Typography, Container } from '@mui/material';
+import { useRttData, useThroughputData, useMapMarkers } from './hooks';
+import { Map, RttChart, MaxFlowChart, Header } from './components';
+import SidebarContainer from './components/SidebarContainer';
 
 function App() {
-  const [data, setData] = useState(null);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    fetch('https://floating-hamlet-57375-16c0be74a380.herokuapp.com/api')
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.text();
-      })
-      .then(data => {
-        setData(data);
-      })
-      .catch(error => {
-        console.error('Error fetching data:', error);
-        setError(error.message);
-      });
-  }, []);
+  const { rttData, error: rttError } = useRttData();
+  const { maxFlowData, error: maxFlowError } = useThroughputData();
+  const { markers, addMarker } = useMapMarkers();
 
   return (
-    <div className="App">
-      <h1>Data from Flask API:</h1>
-      {error ? <p>Error: {error}</p> : null}
-      {data ? <p>{data}</p> : <p>Loading...</p>}
-    </div>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <Header />
+      <SidebarContainer>
+        <Box sx={{ flexGrow: 1, mt: 5, width: '100%', overflowY: 'auto' }}>
+          <Box sx={{ mb: 4, height: '700px', width: '100%' }}>
+            <Map markers={markers} onMapClick={addMarker} />
+          </Box>
+          <Container sx={{ py: 2 }}>
+            <ChartSection title="RTT over Time" error={rttError}>
+              <RttChart data={rttData} />
+            </ChartSection>
+            <ChartSection title="Max Flow over Time" error={maxFlowError}>
+              <MaxFlowChart data={maxFlowData} />
+            </ChartSection>
+          </Container>
+        </Box>
+      </SidebarContainer>
+    </Box>
   );
 }
+
+const ChartSection = ({ title, error, children }) => (
+  <Box sx={{ mt: 4 }}>
+    <Typography variant="h5" component="h2" sx={{ mb: 2 }}>{title}</Typography>
+    {error ? <Typography color="error">{error}</Typography> : children}
+  </Box>
+);
 
 export default App;
